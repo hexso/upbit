@@ -1,5 +1,5 @@
 import upbit
-
+import average_candle
 
 class AutoBot():
     trader = None
@@ -39,4 +39,6 @@ if __name__ == '__main__':
     '''
     trader = upbit.UpbitTrade()
     autoTrader = AutoBot(trader)
+    algorithm = average_candle.AvgCandle()
+    autoTrader.start(algorithm)
 
