@@ -6,7 +6,7 @@ from functools import wraps
 import json
 
 WAITTIME=0.1
-LOGFILE=date.today()
+LOGFILE='upbit_trade.txt'
 def sleepTime(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -68,6 +68,48 @@ class UpbitTrade():
             return -1
         balance = UpbitTrade.upbit.get_balances()[0]
         return balance
+
+    @withLog
+    @sleepTime
+    def sendBuying(self, stockCode, amount, trade, price=None):
+        '''
+
+        :param stockCode:
+        :param amount:
+        :param type: 0은 지정가, 1은 시장가
+        :param price: 지정가일 경우 필요.
+        :return: uuid, ord_type, price, state,volume, remaining_volume etc..
+        '''
+        Trade = {'지정가' : 0, '시장가' : 1}
+        try :
+            tradeType = Trade[trade]
+        except KeyError as e:
+            print('Wrong trade type')
+            return 0
+
+        if tradeType == 0:
+            result = UpbitTrade.upbit.buy_limit_order(stockCode, price, amount)
+        elif tradeType == 1:
+            result = UpbitTrade.upbit.buy_market_order(stockCode,amount)
+
+        return result
+
+    @withLog
+    @sleepTime
+    def sendSelling(self, stockCode, amount, trade, price=None):
+        Trade = {'지정가': 0, '시장가': 1}
+        try:
+            tradeType = Trade[trade]
+        except KeyError as e:
+            print('Wrong trade type')
+            return 0
+
+        if tradeType == 0:
+            result = UpbitTrade.upbit.sell_limit_order(stockCode, price, amount)
+        elif tradeType == 1:
+            result = UpbitTrade.upbit.sell_market_order(stockCode, amount)
+
+        return result
 
     @sleepTime
     def getStocksList(self, money="KRW"):

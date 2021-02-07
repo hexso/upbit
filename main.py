@@ -1,16 +1,42 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import upbit
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+class AutoBot():
+    trader = None
+
+    def __init__(self, trader):
+        AutoBot.trader = trader
+        f = open('private','r')
+        accessKey = f.readline()
+        privateKey = f.readline()
+        AutoBot.trader.login(accessKey, privateKey)
+
+    def start(self, algorithm):
+        algorithm.start()
+
+    def getBalance(self):
+        return AutoBot.trader.getBalance()
+
+    def sendBuying(self, stockCode, amount, trade, price=None):
+        return AutoBot.trader.sendBuying(stockCode, amount, trade, price)
+
+    def sendSelling(self, stockCode, amount, trade, price=None):
+        return AutoBot.trader.sendSelling(self, stockCode, amount, trade, price)
+
+    def getStocksList(self, money="KRW"):
+        return AutoBot.trader.getStocksList(self, money)
+
+    def getDayCandle(self, stockCode):
+        return AutoBot.trader.getDayCandle(stockCode)
+
+    def getMinCandle(self, stockCode):
+        return AutoBot.trader.getMinCandle(stockCode)
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    '''
+    Upbit를 이용하여 거래
+    '''
+    trader = upbit.UpbitTrade()
+    autoTrader = AutoBot(trader)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
