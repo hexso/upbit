@@ -5,7 +5,7 @@ from time import sleep
 from functools import wraps
 import json
 
-WAITTIME=0.1
+WAITTIME=0.01
 LOGFILE='upbit_trade.txt'
 def sleepTime(func):
     @wraps(func)
@@ -49,7 +49,7 @@ class UpbitTrade():
         print("Upbit is initiate.")
 
     def login(self, accessKey, secretKey):
-        UpbitTrade.upbit = pyupbit.Upbit()
+        UpbitTrade.upbit = pyupbit.Upbit(accessKey, secretKey)
         if UpbitTrade.upbit == None:
             print("login fail")
         else :
@@ -111,6 +111,11 @@ class UpbitTrade():
 
         return result
 
+    @withLog
+    @sleepTime
+    def CancelOrder(self, uuid):
+        return UpbitTrade.upbit.cancel_order(uuid)
+
     @sleepTime
     def getStocksList(self, money="KRW"):
         t_stocks_list = pyupbit.get_tickers(fiat=money)
@@ -147,6 +152,9 @@ class UpbitTrade():
         json_data = json.loads(response.text)[0]
         return json_data
 
+    @sleepTime
+    def getCurrentPrice(self, stockCode):
+        return pyupbit.get_current_price(stockCode)
 
 if __name__ == '__main__':
     print('PyCharm')

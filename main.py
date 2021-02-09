@@ -6,9 +6,10 @@ class AutoBot():
 
     def __init__(self, trader):
         AutoBot.trader = trader
-        f = open('private','r')
+        f = open('private.txt','r')
         accessKey = f.readline()
         privateKey = f.readline()
+        print('{} privatekey is {}'.format(accessKey,privateKey))
         AutoBot.trader.login(accessKey, privateKey)
 
     def start(self, algorithm):
@@ -21,10 +22,10 @@ class AutoBot():
         return AutoBot.trader.sendBuying(stockCode, amount, trade, price)
 
     def sendSelling(self, stockCode, amount, trade, price=None):
-        return AutoBot.trader.sendSelling(self, stockCode, amount, trade, price)
+        return AutoBot.trader.sendSelling(stockCode, amount, trade, price)
 
-    def getStocksList(self, money="KRW"):
-        return AutoBot.trader.getStocksList(self, money)
+    def getStocksList(self, money='KRW'):
+        return AutoBot.trader.getStocksList(money)
 
     def getDayCandle(self, stockCode):
         return AutoBot.trader.getDayCandle(stockCode)
@@ -32,6 +33,11 @@ class AutoBot():
     def getMinCandle(self, stockCode):
         return AutoBot.trader.getMinCandle(stockCode)
 
+    def getCurrentPrice(self, stockCode):
+        return AutoBot.trader.getCurrentPrice(stockCode)
+
+    def CancelOrder(self, uuid):
+        return AutoBot.trader.CancelOrder(uuid)
 
 if __name__ == '__main__':
     '''
@@ -39,6 +45,6 @@ if __name__ == '__main__':
     '''
     trader = upbit.UpbitTrade()
     autoTrader = AutoBot(trader)
-    algorithm = average_candle.AvgCandle()
+    algorithm = average_candle.AvgCandle(autoTrader)
     autoTrader.start(algorithm)
 
