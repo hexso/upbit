@@ -7,8 +7,8 @@ class AutoBot():
     def __init__(self, trader):
         AutoBot.trader = trader
         f = open('private.txt','r')
-        accessKey = f.readline()
-        privateKey = f.readline()
+        accessKey = 'F3tbzm49cxM20CEHILBz3CvpRhxhaxnxvQhCBqlx'#f.readline()
+        privateKey = 'hctDvzEukrI87RnwfinQ0YsI8qAonuUUWohAn4AL'#f.readline()
         print('{} privatekey is {}'.format(accessKey,privateKey))
         AutoBot.trader.login(accessKey, privateKey)
 

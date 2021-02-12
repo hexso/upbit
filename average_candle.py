@@ -11,7 +11,7 @@ import threading
 class AvgCandle():
     TICK_WAITTIME = 0.1
     START_MONEY = 10000
-    WAITTIME= 5
+    WAITTIME= 10
 
     def __init__(self, trader):
         print('AvgCandle initiate')
@@ -19,24 +19,25 @@ class AvgCandle():
         self.seedMoney = AvgCandle.START_MONEY
         self.tickPriList = [0]*15
         self.doBuy = 0
+        self.isCoin = False
+        self.haveCoin = 0
+        self.judge = 0
+        self.lastuuid = 0
 
     def start(self):
         self.selectedCoin = self.SelectCoin()
         print('selected coin is {}'.format(self.selectedCoin))
-        self.isCoin = False
-        self.haveCoin = 0
 
         #15틱을 저장하기 위해 총 WAITTIME*15초 동안 저장
         for i in range(14,-1,-1):
             self.tickPriList[i] = self.trader.getCurrentPrice(self.selectedCoin)
             sleep(AvgCandle.WAITTIME)
             print(self.tickPriList[i])
-        self.newTick = 1
+        self.newTick = 0
 
         #Thread로 코인가격 받아오기.
         self.conGetPrice = threading.Timer(AvgCandle.WAITTIME, self.GetPrice)
         self.conGetPrice.start()
-        return 0
         while 1:
             # 매수 매도 포지션이 바뀌었을경우에는 어떤 경우에서든 주문을 취소한다.
             if self.judge == 0:
@@ -50,11 +51,9 @@ class AvgCandle():
             #3. 지정가 매도를 했다. 이때 (1) 아예 안팔린경우 (2) 일부만 팔린경우 (3) 다 팔린경우
             if self.doBuy == 1 and self.newTick == 1:
                 self.newTick = 0
-                self.checkBalance()
                 self.BuyCoin()
-            elif self.doBuy == -1 and self.newTick == 1 :
+            elif self.doBuy == -1 and self.newTick == 1:
                 self.newTick = 0
-                self.checkBalance()
                 self.SellCoin()
             sleep(AvgCandle.TICK_WAITTIME)
     def SelectCoin(self):
@@ -74,8 +73,10 @@ class AvgCandle():
         
         :return: 1은 10틱이 아래일때, -1은 10틱이 위에일때, 0은 같을떄.
         '''
-        tenAvg = sum(self.tickPriList[5:]) / 10
-        fifteenAvg = sum(self.tickPriList) / 15
+        tenAvg = int(sum(self.tickPriList[5:]) / 10)
+        fifteenAvg = int(sum(self.tickPriList) / 15)
+        print('tenAvg is {}'.format(tenAvg))
+        print('fifteenAvg is {}'.format(fifteenAvg))
         if tenAvg < fifteenAvg :
             self.judge = 1
         elif tenAvg > fifteenAvg :
@@ -89,21 +90,41 @@ class AvgCandle():
         self.tickPriList.append(self.trader.getCurrentPrice(self.selectedCoin))
         self.JudgeGraph()
         self.newTick = 1
+        threading.Timer(AvgCandle.WAITTIME, self.GetPrice).start()
 
 
     def BuyCoin(self):
-        money = self.trader.getBalance()[0]['balance']
+        balance = self.trader.getBalance()
+        money = 0
+        for i in balance:
+            if 'KRW' == i['currency']:
+                money = i['balance']
+                money = int(float(money))
+                break
         price = self.trader.getCurrentPrice(self.selectedCoin)
         amount = int(money/price)
-        result = self.trader.sendBuying(self.selectedCoin, amount, '시장가', price)
-        self.lastuuid = result[0]['uuid']
+        result = self.trader.sendBuying(self.selectedCoin, amount, '지정가', price)
+        try:
+            self.lastuuid = result[0]['uuid']
+        except:
+            print('is in BuyCoin')
+            pass
 
     def SellCoin(self):
         price = self.trader.getCurrentPrice(self.selectedCoin)
         #지금 가지고있는 코인 개수 확인해야함
-        amount = self.trader.getBalance(self.selectedCoin)
-        result = self.trader.sendSelling(self.selectedCoin, amount, '시장가', price)
-        self.lastuuid = result[0]['uuid']
+        amount = self.trader.getBalance()
+        for i in amount:
+            if self.selectedCoin[4:] == i['currency']:
+                amount = i['balance']
+                amount = int(float(amount))
+                break
+        result = self.trader.sendSelling(self.selectedCoin, amount, '지정가', price)
+        try:
+            self.lastuuid = result[0]['uuid']
+        except:
+            print('is in SellCoin')
+            pass
 
 
     def checkBuy(self):

@@ -50,6 +50,7 @@ class UpbitTrade():
 
     def login(self, accessKey, secretKey):
         UpbitTrade.upbit = pyupbit.Upbit(accessKey, secretKey)
+        print(UpbitTrade.upbit.get_balances())
         if UpbitTrade.upbit == None:
             print("login fail")
         else :
@@ -58,7 +59,7 @@ class UpbitTrade():
 
     @withLog
     @sleepTime
-    def getBalance(self):
+    def getBalance(self, coin=None):
         '''
 
         :return:
@@ -66,7 +67,8 @@ class UpbitTrade():
         if  UpbitTrade.upbit == None:
             print("please login first")
             return -1
-        balance = UpbitTrade.upbit.get_balances()[0]
+        balance = UpbitTrade.upbit.get_balances(coin)
+        print(balance)
         return balance
 
     @withLog
