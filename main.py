@@ -1,5 +1,6 @@
 import upbit
 import average_candle
+import sys
 
 class AutoBot():
     trader = None
@@ -8,7 +9,7 @@ class AutoBot():
         AutoBot.trader = trader
         f = open('private.txt','r')
         accessKey = f.readline()
-        privateKey = f.readline()
+        privateKey =f.readline()
         print('{} privatekey is {}'.format(accessKey,privateKey))
         AutoBot.trader.login(accessKey, privateKey)
 
@@ -39,10 +40,15 @@ class AutoBot():
     def CancelOrder(self, uuid):
         return AutoBot.trader.CancelOrder(uuid)
 
+    def help(self):
+        print('자동 매매는 1, 차트 분석 및 알림은 2')
+
+
 if __name__ == '__main__':
     '''
-    Upbit를 이용하여 거래
+    Upbit
     '''
+    help()
     trader = upbit.UpbitTrade()
     autoTrader = AutoBot(trader)
     algorithm = average_candle.AvgCandle(autoTrader)
