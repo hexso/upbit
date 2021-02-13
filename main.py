@@ -1,20 +1,30 @@
 import upbit
 import average_candle
 import sys
+from predict_chart import Predict
+from telegram_bot import TelegramBot
 
 class AutoBot():
     trader = None
 
-    def __init__(self, trader):
+    def __init__(self):
+        self.help()
+        self.notibot = TelegramBot()
+
+    def AutoStart(self, algorithm, trader):
+        self._AutoTradeInit(trader)
+        algorithm.start()
+
+    def _AutoTradeInit(self,trader):
         AutoBot.trader = trader
-        f = open('private.txt','r')
+        f = open('private.txt', 'r')
         accessKey = f.readline()
-        privateKey =f.readline()
-        print('{} privatekey is {}'.format(accessKey,privateKey))
+        privateKey = f.readline()
+        print('{} privatekey is {}'.format(accessKey, privateKey))
         AutoBot.trader.login(accessKey, privateKey)
 
-    def start(self, algorithm):
-        algorithm.start()
+    def AnalyStart(self, analyzer):
+        print()
 
     def getBalance(self):
         return AutoBot.trader.getBalance()
@@ -43,14 +53,23 @@ class AutoBot():
     def help(self):
         print('자동 매매는 1, 차트 분석 및 알림은 2')
 
+    def NotifyInfo(self, msg):
+        self.notibot.SendMsg(msg)
 
 if __name__ == '__main__':
     '''
     Upbit
     '''
-    help()
-    trader = upbit.UpbitTrade()
-    autoTrader = AutoBot(trader)
-    algorithm = average_candle.AvgCandle(autoTrader)
-    autoTrader.start(algorithm)
+    autoTrader = AutoBot()
+    ch = input()
+    if ch == 1:
+        trader = upbit.UpbitTrade()
+        algorithm = average_candle.AvgCandle(autoTrader)
+        autoTrader.AutoStart(algorithm, trader)
+
+    elif ch == 2:
+        analyzer = Predict()
+    else :
+        print('wrong choice')
+        autoTrader.help()
 
