@@ -3,8 +3,9 @@ import average_candle
 import sys
 from predict_chart import Predict
 from telegram_bot import TelegramBot
+from inspect_chart import Inspector
 
-class AutoBot():
+class AutoBot:
     trader = None
 
     def __init__(self):
@@ -41,8 +42,8 @@ class AutoBot():
     def getDayCandle(self, stockCode):
         return AutoBot.trader.getDayCandle(stockCode)
 
-    def getMinCandle(self, stockCode):
-        return AutoBot.trader.getMinCandle(stockCode)
+    def getMinCandle(self, stockCode, mins='1', count=1):
+        return AutoBot.trader.getMinCandle(stockCode, mins, count)
 
     def getCurrentPrice(self, stockCode):
         return AutoBot.trader.getCurrentPrice(stockCode)
@@ -68,7 +69,8 @@ if __name__ == '__main__':
         autoTrader.AutoStart(algorithm, trader)
 
     elif ch == 2:
-        analyzer = Predict()
+        inspector = Inspector()
+        inspector.Start()
     else :
         print('wrong choice')
         autoTrader.help()

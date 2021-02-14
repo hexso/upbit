@@ -13,8 +13,9 @@ class TelegramBot:
 
 
 if __name__ == '__main__':
-    tgBot = TelegramBot('토큰번호','채팅방ID')
-    updates = tgBot.core.getUpdates()
+    #tlgBot = TelegramBot()
+    tgBot = telegram.Bot()
+    updates = tgBot.getUpdates()
     for u in updates:
         print(u.message)
-    tgBot.SendMsg('hello_world')
+    #tlgBot.SendMsg('hello_world')
