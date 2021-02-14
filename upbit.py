@@ -124,7 +124,7 @@ class UpbitTrade():
         return t_stocks_list
 
     @sleepTime
-    def getDayCandle(self, stockCode):
+    def getDayCandle(self, stockCode, count=1):
         '''
         :param stockCode: input stocks tickers. ex) KRW-BTC
         :return: dictionary is in list.
@@ -133,13 +133,13 @@ class UpbitTrade():
                 change_price, change_rate
         '''
         url = "https://api.upbit.com/v1/candles/days"
-        querystring = {"market": stockCode, "count": "1"}
+        querystring = {"market": stockCode, "count": count}
         response = requests.request("GET", url, params=querystring)
-        json_data = json.loads(response.text)[0]
+        json_data = json.loads(response.text)
         return json_data
 
     @sleepTime
-    def getMinCandle(self, stockCode):
+    def getMinCandle(self, stockCode, mins='1', count=1):
         '''
 
         :param stockCode: input stocks tickers. ex) KRW-BTC
@@ -148,10 +148,12 @@ class UpbitTrade():
                 candle_acc_trade_price, candle_acc_trade_volume,
                 change_price, change_rate
         '''
-        url = "https://api.upbit.com/v1/candles/minutes/1"
-        querystring = {"market": stockCode, "count": "1"}
+        if type(mins) == type(1) :
+            mins = str(mins)
+        url = "https://api.upbit.com/v1/candles/minutes/" + mins
+        querystring = {"market": stockCode, "count": count}
         response = requests.request("GET", url, params=querystring)
-        json_data = json.loads(response.text)[0]
+        json_data = json.loads(response.text)
         return json_data
 
     @sleepTime
