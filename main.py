@@ -14,43 +14,44 @@ class AutoBot:
 
     def AutoStart(self, algorithm, trader):
         self._AutoTradeInit(trader)
-        algorithm.start()
+        algorithm.start(trader)
 
-    def _AutoTradeInit(self,trader):
+    def _AutoTradeInit(self, trader):
         AutoBot.trader = trader
         f = open('private.txt', 'r')
-        accessKey = f.readline()
-        privateKey = f.readline()
-        print('{} privatekey is {}'.format(accessKey, privateKey))
-        AutoBot.trader.login(accessKey, privateKey)
+        access_key = f.readline()
+        private_key = f.readline()
+        print('{} private_key is {}'.format(access_key, private_key))
+        AutoBot.trader.login(access_key, private_key)
 
     def AnalyStart(self, analyzer):
         print()
 
-    def getBalance(self):
-        return AutoBot.trader.getBalance()
+    def GetBalance(self):
+        return AutoBot.trader.GetBalance()
 
-    def sendBuying(self, stockCode, amount, trade, price=None):
-        return AutoBot.trader.sendBuying(stockCode, amount, trade, price)
+    def SendBuying(self, stockcode, amount, trade, price=None):
+        return AutoBot.trader.SendBuying(stockcode, amount, trade, price)
 
-    def sendSelling(self, stockCode, amount, trade, price=None):
-        return AutoBot.trader.sendSelling(stockCode, amount, trade, price)
+    def SendSelling(self, stockcode, amount, trade, price=None):
+        return AutoBot.trader.SendSelling(stockcode, amount, trade, price)
 
-    def getStocksList(self, money='KRW'):
-        return AutoBot.trader.getStocksList(money)
+    def GetStocksList(self, money='KRW'):
+        return AutoBot.trader.GetStocksList(money)
 
-    def getDayCandle(self, stockCode):
-        return AutoBot.trader.getDayCandle(stockCode)
+    def GetDayCandle(self, stockcode):
+        return AutoBot.trader.GetDayCandle(stockcode)
 
-    def getMinCandle(self, stockCode, mins='1', count=1):
-        return AutoBot.trader.getMinCandle(stockCode, mins, count)
+    def GetMinCandle(self, stockcode, mins='1', count=1):
+        return AutoBot.trader.GetMinCandle(stockcode, mins, count)
 
-    def getCurrentPrice(self, stockCode):
-        return AutoBot.trader.getCurrentPrice(stockCode)
+    def GetCurrentPrice(self, stockcode):
+        return AutoBot.trader.GetCurrentPrice(stockcode)
 
     def CancelOrder(self, uuid):
         return AutoBot.trader.CancelOrder(uuid)
 
+    @staticmethod
     def help(self):
         print('자동 매매는 1, 차트 분석 및 알림은 2')
 
@@ -65,7 +66,7 @@ if __name__ == '__main__':
     ch = input()
     if ch == 1:
         trader = upbit.UpbitTrade()
-        algorithm = average_candle.AvgCandle(autoTrader)
+        algorithm = average_candle.AvgCandle()
         autoTrader.AutoStart(algorithm, trader)
 
     elif ch == 2:

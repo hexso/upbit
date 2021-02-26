@@ -7,7 +7,7 @@ import json
 
 WAITTIME=0.01
 LOGFILE='upbit_trade.txt'
-def sleepTime(func):
+def SleepTime(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         sleep(WAITTIME)
@@ -16,7 +16,7 @@ def sleepTime(func):
 
     return wrapper
 
-def withLog(func):
+def WithLog(func):
     import logging
     import logging.handlers
 
@@ -40,7 +40,7 @@ def withLog(func):
 
     return wrapper
 
-class UpbitTrade():
+class UpbitTrade:
 
     stocks_list = []
     selected_coin = ''
@@ -48,18 +48,14 @@ class UpbitTrade():
     def __init__(self):
         print("Upbit is initiate.")
 
-    def login(self, accessKey, secretKey):
-        UpbitTrade.upbit = pyupbit.Upbit(accessKey, secretKey)
+    def Login(self, access_key, secret_key):
+        UpbitTrade.upbit = pyupbit.Upbit(access_key, secret_key)
         print(UpbitTrade.upbit.get_balances())
-        if UpbitTrade.upbit == None:
-            print("login fail")
-        else :
-            print("login success")
+        #error handle required
 
-
-    @withLog
-    @sleepTime
-    def getBalance(self, coin=None):
+    @WithLog
+    @SleepTime
+    def GetBalance(self, coin=None):
         '''
 
         :return:
@@ -71,12 +67,12 @@ class UpbitTrade():
         print(balance)
         return balance
 
-    @withLog
-    @sleepTime
-    def sendBuying(self, stockCode, amount, trade, price=None):
+    @WithLog
+    @SleepTime
+    def SendBuying(self, stockcode, amount, trade, price=None):
         '''
 
-        :param stockCode:
+        :param stockcode:
         :param amount:
         :param type: 0은 지정가, 1은 시장가
         :param price: 지정가일 경우 필요.
@@ -90,15 +86,15 @@ class UpbitTrade():
             return 0
 
         if tradeType == 0:
-            result = UpbitTrade.upbit.buy_limit_order(stockCode, price, amount)
+            result = UpbitTrade.upbit.buy_limit_order(stockcode, price, amount)
         elif tradeType == 1:
-            result = UpbitTrade.upbit.buy_market_order(stockCode,amount)
+            result = UpbitTrade.upbit.buy_market_order(stockcode,amount)
 
         return result
 
-    @withLog
-    @sleepTime
-    def sendSelling(self, stockCode, amount, trade, price=None):
+    @WithLog
+    @SleepTime
+    def SendSelling(self, stockcode, amount, trade, price=None):
         Trade = {'지정가': 0, '시장가': 1}
         try:
             tradeType = Trade[trade]
@@ -107,42 +103,42 @@ class UpbitTrade():
             return 0
 
         if tradeType == 0:
-            result = UpbitTrade.upbit.sell_limit_order(stockCode, price, amount)
+            result = UpbitTrade.upbit.sell_limit_order(stockcode, price, amount)
         elif tradeType == 1:
-            result = UpbitTrade.upbit.sell_market_order(stockCode, amount)
+            result = UpbitTrade.upbit.sell_market_order(stockcode, amount)
 
         return result
 
-    @withLog
-    @sleepTime
+    @WithLog
+    @SleepTime
     def CancelOrder(self, uuid):
         return UpbitTrade.upbit.cancel_order(uuid)
 
-    @sleepTime
-    def getStocksList(self, money="KRW"):
+    @SleepTime
+    def GetStocksList(self, money="KRW"):
         t_stocks_list = pyupbit.get_tickers(fiat=money)
         return t_stocks_list
 
-    @sleepTime
-    def getDayCandle(self, stockCode, count=1):
+    @SleepTime
+    def GetDayCandle(self, stockcode, count=1):
         '''
-        :param stockCode: input stocks tickers. ex) KRW-BTC
+        :param stockcode: input stocks tickers. ex) KRW-BTC
         :return: dictionary is in list.
                 opening_price, high_price, low_price, trade_price,
                 candle_acc_trade_price, candle_acc_trade_volume,
                 change_price, change_rate
         '''
         url = "https://api.upbit.com/v1/candles/days"
-        querystring = {"market": stockCode, "count": count}
+        querystring = {"market": stockcode, "count": count}
         response = requests.request("GET", url, params=querystring)
         json_data = json.loads(response.text)
         return json_data
 
-    @sleepTime
-    def getMinCandle(self, stockCode, mins='1', count=1):
+    @SleepTime
+    def GetMinCandle(self, stockcode, mins='1', count=1):
         '''
 
-        :param stockCode: input stocks tickers. ex) KRW-BTC
+        :param stockcode: input stocks tickers. ex) KRW-BTC
         :return: dictionary is in list.
                 opening_price, high_price, low_price, trade_price,
                 candle_acc_trade_price, candle_acc_trade_volume,
@@ -151,14 +147,14 @@ class UpbitTrade():
         if type(mins) == type(1) :
             mins = str(mins)
         url = "https://api.upbit.com/v1/candles/minutes/" + mins
-        querystring = {"market": stockCode, "count": count}
+        querystring = {"market": stockcode, "count": count}
         response = requests.request("GET", url, params=querystring)
         json_data = json.loads(response.text)
         return json_data
 
-    @sleepTime
-    def getCurrentPrice(self, stockCode):
-        return pyupbit.get_current_price(stockCode)
+    @SleepTime
+    def GetCurrentPrice(self, stockcode):
+        return pyupbit.get_current_price(stockcode)
 
 if __name__ == '__main__':
     print('PyCharm')
