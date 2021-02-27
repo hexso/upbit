@@ -31,10 +31,16 @@ class AutoBot:
         return AutoBot.trader.GetBalance()
 
     def SendBuying(self, stockcode, amount, trade, price=None):
-        return AutoBot.trader.SendBuying(stockcode, amount, trade, price)
+        result = AutoBot.trader.SendBuying(stockcode, amount, trade, price)
+        result = result[0]
+        self.notibot.SendMsg('매수: {}  총 개수 {}  총액 : {}원'.format(stockcode, result['executed_volume'], result['avg_price'] * result['executed_volume']))
+        return result
 
     def SendSelling(self, stockcode, amount, trade, price=None):
-        return AutoBot.trader.SendSelling(stockcode, amount, trade, price)
+        result = AutoBot.trader.SendBuying(stockcode, amount, trade, price)
+        result = result[0]
+        self.notibot.SendMsg('매도: {}  총 개수 {}  총액 : {}원'.format(stockcode, result['executed_volume'], result['avg_price'] * result['executed_volume']))
+        return result
 
     def GetStocksList(self, money='KRW'):
         return AutoBot.trader.GetStocksList(money)

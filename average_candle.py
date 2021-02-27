@@ -2,130 +2,128 @@ from time import sleep
 import threading
 '''
 10초 단위로 현재가를 얻어온다.
-그래서 10초단위의 10평선, 15평선 두개를 기준으로
-10평선이 15평선을 넘어섰을경우 시장가로 구매
-10평선이 15평선 아래로 내려갈 경우 시장가로 매도
+그래서 10초단위의 5평선, 15평선 두개를 기준으로
+5평선이 15평선을 넘어섰을경우 매수
+일정 이득률을 보면 매도한다.
+5평선이 15평선을 뚫고 내려갈 경우도 매도한다.
+거래대금이 높은 상위개수로만 돌린다.
 
+Todo: 필요시 추가로 지정가 거래 구현 필요
 '''
 
-class AvgCandle():
-    TICK_WAITTIME = 0.1
-    START_MONEY = 10000
-    WAITTIME= 10
 
-    def __init__(self, trader):
+
+class AvgCandle:
+
+    def __init__(self):
+        self.TICK_WAITTIME = 0.1
+        self.SEED_MONEY = 100000
+        self.CANDLE_MIN = 10 # 분봉
+        self.MAX_COIN_CNT = 15 # 탐색하는 코인 개수
+        self.YIELD = 1 # 목표 수익률
+        self.UP_AVG_CANDLE = 15 + 1 # 상위 이동평균선 뒤에 + 1 은 바로 전 이동평균선을 보기 위함
+        self.DOWN_AVG_CANDLE = 5 # 하위 이동평균선
+
         print('AvgCandle initiate')
+        self.trader = None
+        self.coin_candle_list = dict() # key값은 코인, value값은 self.UP_AVG_CANDLE + 1 크기의 리스트다.
+        self.coin_amount = dict()
+        self.selected_coin = [0] * self.MAX_COIN_CNT
+
+    def start(self, trader):
         self.trader = trader
-        self.seedMoney = AvgCandle.START_MONEY
-        self.tickPriList = [0]*15
-        self.doBuy = 0
-        self.isCoin = False
-        self.haveCoin = 0
-        self.judge = 0
-        self.lastuuid = 0
+        self.selected_coin = self.SelectCoin()
+        for i in self.selected_coin:
+            self.coin_amount[i] = 0
+        print('selected coin is {}'.format(self.selected_coin))
 
-    def start(self):
-        self.selectedCoin = self.SelectCoin()
-        print('selected coin is {}'.format(self.selectedCoin))
 
-        #15틱을 저장하기 위해 총 WAITTIME*15초 동안 저장
-        for i in range(14,-1,-1):
-            self.tickPriList[i] = self.trader.getCurrentPrice(self.selectedCoin)
-            sleep(AvgCandle.WAITTIME)
-            print(self.tickPriList[i])
-        self.newTick = 0
+        #처음 분봉 업데이트
+        self.GetAvgCandle()
 
         #Thread로 코인가격 받아오기.
-        self.conGetPrice = threading.Timer(AvgCandle.WAITTIME, self.GetPrice)
-        self.conGetPrice.start()
+        threading.Timer(self.CANDLE_MIN, self.GetAvgCandle()).start()
         while 1:
-            # 매수 매도 포지션이 바뀌었을경우에는 어떤 경우에서든 주문을 취소한다.
-            if self.judge == 0:
-                pass
-            elif self.doBuy != self.judge:
-                self.CancelOrder()
-                self.doBuy = self.judge
+            for i in self.selected_coin:
 
-            #1. 그래프보다 낮을경우 사라. 높을경우 팔아라.
-            #2. 지정가 매수를 했다. 이때 (1) 아예 안사진경우 (2) 일부만 사진경우 (3) 다 사진경우
-            #3. 지정가 매도를 했다. 이때 (1) 아예 안팔린경우 (2) 일부만 팔린경우 (3) 다 팔린경우
-            if self.doBuy == 1 and self.newTick == 1:
-                self.newTick = 0
-                self.BuyCoin()
-            elif self.doBuy == -1 and self.newTick == 1:
-                self.newTick = 0
-                self.SellCoin()
-            sleep(AvgCandle.TICK_WAITTIME)
+                if self.coin_amount[i] == 0: # coin을 가지고 있지 않은 경우
+                    if self.CheckCross(self.coin_candle_list[i]) == 1:
+                        result = self.BuyCoinLimit(i)
+
+
+                else: # 코인을 가지고 있는 경우
+                    if self.CheckCross(self.coin_candle_list[i]) == 2:
+                        result = self.SellCoinLimit(i)
+
+    def CheckCross(self, avg_candle):
+        '''
+        참조 : self.UP_AVG_CANDLE, self.DOWN_AVG_CANDLE
+        :param: avg_candle 총 self.UP_AVG_CANDLE만큼의 list
+        :return:아래에 해당되지 않는 경우는 0
+                골든 크로스(낮은 이동평균선이 높은 이동평균선을 뚫고 올라간 경우) 1
+                데드 크로스(낮은 이동평균선이 높은 이동평균선을 뚫고 내려간 경우) 2
+
+        '''
+        before_low_avg = avg_candle[1:self.DOWN_AVG_CANDLE + 1] / self.DOWN_AVG_CANDLE
+        now_low_avg = avg_candle[:self.DOWN_AVG_CANDLE] / self.DOWN_AVG_CANDLE
+
+        before_high_avg = avg_candle[1:self.UP_AVG_CANDLE -1] / (self.UP_AVG_CANDLE - 1)
+        now_high_avg = avg_candle[:self.UP_AVG_CANDLE -1] / (self.UP_AVG_CANDLE - 1)
+
+        if before_low_avg < before_high_avg and now_low_avg >= now_high_avg:
+            return 1
+        elif before_low_avg > before_high_avg and now_low_avg <= now_high_avg:
+            return 2
+        else:
+            return 0
+
+
     def SelectCoin(self):
-        stockList = self.trader.getStocksList()
-        maxVolume = 0
-        selectedCoin = ''
-        for i in stockList:
+        '''
+        volume이 큰 coin들을 선택.
+        갯수는 총 self.MAX_COIN_CNT개
+        :return: 코인을 리스트로 반환.
+        '''
+        stock_list = self.trader.GetStocksList()
+        tmp_dict = dict()
+        selected_coin = []
+        for i in stock_list:
             result = self.trader.getDayCandle(i)
-            if maxVolume < result['candle_acc_trade_price']:
-                maxVolume = result['candle_acc_trade_price']
-                selectedCoin = i
+            tmp_dict[i] = result['candle_acc_trade_price']
             sleep(0.1)
-        return selectedCoin
+        tmp_dict = sorted(tmp_dict.items())
+        selected_coin = tmp_dict.keys()
+        return selected_coin[:self.MAX_COIN_CNT]
 
-    def JudgeGraph(self):
+    def GetAvgCandle(self):
         '''
-        
-        :return: 1은 10틱이 아래일때, -1은 10틱이 위에일때, 0은 같을떄.
+        :param 실시간으로 selected coin 리스트에 있는 코인들의 분봉을 얻는다.
         '''
-        tenAvg = int(sum(self.tickPriList[5:]) / 10)
-        fifteenAvg = int(sum(self.tickPriList) / 15)
-        print('tenAvg is {}'.format(tenAvg))
-        print('fifteenAvg is {}'.format(fifteenAvg))
-        if tenAvg < fifteenAvg :
-            self.judge = 1
-        elif tenAvg > fifteenAvg :
-            self.judge = -1
-        else :
-            self.judge = 0
-
-    def GetPrice(self):
         # 코인 동기화
-        self.tickPriList.pop(0)
-        self.tickPriList.append(self.trader.getCurrentPrice(self.selectedCoin))
-        self.JudgeGraph()
-        self.newTick = 1
-        threading.Timer(AvgCandle.WAITTIME, self.GetPrice).start()
+        tmp_list = list()
+        for i in self.selected_coin :
+            candle_dict = self.trader.GetMinCandle(i, self.CANDLE_MIN, self.UP_AVG_CANDLE)
+            self.coin_candle_list[i] = [i['trade_price'] for i in candle_dict]
+            sleep(self.TICK_WAITTIME)
+        threading.Timer(self.CANDLE_MIN, self.GetAvgCandle).start()
 
+    def BuyCoinLimit(self, coin):
+        '''
+        self.SEED_MONEY를 고려해서 해당 코인을 일정 개수만큼산다.
+        :param coin:
+        :return:
+        '''
+        price = self.trader.getCurrentPrice(coin)
+        amount = int(self.SEED_MONEY/price)
+        result = self.trader.SendBuying(coin, amount, '시장가')
+        self.coin_amount[coin] = result['executed_volume']
+        return result
 
-    def BuyCoin(self):
-        balance = self.trader.getBalance()
-        money = 0
-        for i in balance:
-            if 'KRW' == i['currency']:
-                money = i['balance']
-                money = int(float(money))
-                break
-        price = self.trader.getCurrentPrice(self.selectedCoin)
-        amount = int(money/price)
-        result = self.trader.sendBuying(self.selectedCoin, amount, '지정가', price)
-        try:
-            self.lastuuid = result[0]['uuid']
-        except:
-            print('is in BuyCoin')
-            pass
-
-    def SellCoin(self):
-        price = self.trader.getCurrentPrice(self.selectedCoin)
-        #지금 가지고있는 코인 개수 확인해야함
-        amount = self.trader.getBalance()
-        for i in amount:
-            if self.selectedCoin[4:] == i['currency']:
-                amount = i['balance']
-                amount = int(float(amount))
-                break
-        result = self.trader.sendSelling(self.selectedCoin, amount, '지정가', price)
-        try:
-            self.lastuuid = result[0]['uuid']
-        except:
-            print('is in SellCoin')
-            pass
-
+    def SellCoinLimit(self, coin):
+        amount = self.coin_amount[coin]
+        result = self.trader.SendSelling(coin, amount, '시장가')
+        self.coin_amount[coin] = result['remaining_volume']
+        return result
 
     def checkBuy(self):
         pass
