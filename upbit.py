@@ -120,7 +120,7 @@ class UpbitTrade:
         return t_stocks_list
 
     @SleepTime
-    def GetDayCandle(self, stockcode, count=1):
+    def GetDayCandle(self, stockcode, count=1, start_time = None):
         '''
         :param stockcode: input stocks tickers. ex) KRW-BTC
         :return: dictionary is in list.
@@ -129,13 +129,13 @@ class UpbitTrade:
                 change_price, change_rate
         '''
         url = "https://api.upbit.com/v1/candles/days"
-        querystring = {"market": stockcode, "count": count}
+        querystring = {"market": stockcode, "count": count, "to":start_time}
         response = requests.request("GET", url, params=querystring)
         json_data = json.loads(response.text)
         return json_data
 
     @SleepTime
-    def GetMinCandle(self, stockcode, mins='1', count=1):
+    def GetMinCandle(self, stockcode, mins='1', count=1, start_time = None):
         '''
 
         :param stockcode: input stocks tickers. ex) KRW-BTC
@@ -147,7 +147,7 @@ class UpbitTrade:
         if type(mins) == type(1) :
             mins = str(mins)
         url = "https://api.upbit.com/v1/candles/minutes/" + mins
-        querystring = {"market": stockcode, "count": count}
+        querystring = {"market": stockcode, "count": count, "to":start_time}
         response = requests.request("GET", url, params=querystring)
         json_data = json.loads(response.text)
         return json_data
@@ -157,4 +157,7 @@ class UpbitTrade:
         return pyupbit.get_current_price(stockcode)
 
 if __name__ == '__main__':
+    tr = UpbitTrade()
+    print(tr.GetMinCandle('KRW-BTC',15,10))
+
     print('PyCharm')
