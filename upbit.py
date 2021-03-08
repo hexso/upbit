@@ -53,9 +53,8 @@ class UpbitTrade:
         print(UpbitTrade.upbit.get_balances())
         #error handle required
 
-    @WithLog
     @SleepTime
-    def GetBalance(self, coin=None):
+    def GetBalance(self, coin=False):
         '''
 
         :return:
@@ -67,15 +66,14 @@ class UpbitTrade:
         print(balance)
         return balance
 
-    @WithLog
     @SleepTime
     def SendBuying(self, stockcode, amount, trade, price=None):
         '''
 
         :param stockcode:
-        :param amount:
+        :param amount: 지정가일 경우 양, 시장가일 경우 금액
         :param type: 0은 지정가, 1은 시장가
-        :param price: 지정가일 경우 필요.
+        :param price: 지정가일 경우 해당 가격으로 매수
         :return: uuid, ord_type, price, state,volume, remaining_volume etc..
         '''
         Trade = {'지정가' : 0, '시장가' : 1}
@@ -88,7 +86,7 @@ class UpbitTrade:
         if tradeType == 0:
             result = UpbitTrade.upbit.buy_limit_order(stockcode, price, amount)
         elif tradeType == 1:
-            result = UpbitTrade.upbit.buy_market_order(stockcode,amount)
+            result = UpbitTrade.upbit.buy_market_order(stockcode, amount)
 
         return result
 
@@ -117,6 +115,7 @@ class UpbitTrade:
     @SleepTime
     def GetStocksList(self, money="KRW"):
         t_stocks_list = pyupbit.get_tickers(fiat=money)
+        print('getbal = {}'.format(t_stocks_list))
         return t_stocks_list
 
     @SleepTime
