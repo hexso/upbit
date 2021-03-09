@@ -4,6 +4,7 @@ import sys
 from predict_chart import Predict
 from telegram_bot import TelegramBot
 from inspect_chart import Inspector
+from rapid_stock import RapidStock
 
 class AutoBot:
     trader = None
@@ -12,28 +13,25 @@ class AutoBot:
         self.PrintHelp()
         self.notibot = TelegramBot()
 
-    def AutoStart(self, algorithm, trader):
-        self._AutoTradeInit(trader)
-        algorithm.start(AutoBot.trader)
-
-    def _AutoTradeInit(self, trader):
-        AutoBot.trader = trader
         with open('private.txt', 'r') as f:
             data = f.read()
             data = data.split('\n')
             for i in data:
                 if 'accesskey' in i:
-                    access_key = i[i.find(':')+1:]
+                    self.access_key = i[i.find(':')+1:]
                 elif 'privatekey' in i:
-                    private_key = i[i.find(':') + 1:]
+                    self.private_key = i[i.find(':') + 1:]
                 elif 'telegramtoken' in i:
                     token = i[i.find(':') + 1:]
                 elif 'telegramchatid' in i:
                     chatid = i[i.find(':') + 1:]
-            print('{} private_key is {}'.format(access_key, private_key))
-            AutoBot.trader.Login(access_key, private_key)
             self.notibot.SetToken(token)
             self.notibot.SetChatId(chatid)
+
+    def AutoStart(self, algorithm, trader):
+        AutoBot.trader = trader
+        AutoBot.trader.Login(self.access_key, self.private_key)
+        algorithm.start(AutoBot.trader)
 
     def AnalyStart(self, analyzer):
         print()
@@ -82,7 +80,8 @@ if __name__ == '__main__':
     '''
     autoTrader = AutoBot()
     trader = upbit.UpbitTrade()
-    algorithm = average_candle.AvgCandle()
+    #algorithm = average_candle.AvgCandle()
+    algorithm = RapidStock()
     autoTrader.AutoStart(algorithm, trader)
     # ch = input('뭐할래?')
     # if ch == '1':
