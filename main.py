@@ -1,10 +1,12 @@
 import upbit
-import average_candle
-import sys
-from predict_chart import Predict
-from telegram_bot import TelegramBot
-from inspect_chart import Inspector
+from notify.telegram_bot import TelegramBot
 from rapid_stock import RapidStock
+from buying_half import BuyingHalf
+'''
+매매하는 알고리즘은 start함수를 통해 실행된다.
+나머지 매도, 매수같은 함수들은 아래의 함수들을 이용한다.
+'''
+
 
 class AutoBot:
     trader = None
@@ -81,7 +83,8 @@ if __name__ == '__main__':
     autoTrader = AutoBot()
     trader = upbit.UpbitTrade()
     #algorithm = average_candle.AvgCandle()
-    algorithm = RapidStock()
+    #algorithm = RapidStock()
+    algorithm = BuyingHalf()
     autoTrader.AutoStart(algorithm, trader)
     # ch = input('뭐할래?')
     # if ch == '1':

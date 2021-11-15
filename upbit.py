@@ -5,7 +5,7 @@ from time import sleep
 from functools import wraps
 import json
 
-WAITTIME=0.01
+WAITTIME=0.1
 LOGFILE='upbit_trade.txt'
 def SleepTime(func):
     @wraps(func)
@@ -62,7 +62,10 @@ class UpbitTrade:
         if  UpbitTrade.upbit == None:
             print("please login first")
             return -1
-        balance = UpbitTrade.upbit.get_balances(coin)
+        if coin == False:
+            balance = UpbitTrade.upbit.get_balances(coin)
+        else:
+            balance = UpbitTrade.upbit.get_balance(coin)
         print(balance)
         return balance
 
@@ -154,6 +157,9 @@ class UpbitTrade:
     @SleepTime
     def GetCurrentPrice(self, stockcode):
         return pyupbit.get_current_price(stockcode)
+
+    def GetOrderBook(self, stockcode):
+        return pyupbit.get_orderbook(stockcode)
 
 if __name__ == '__main__':
     tr = UpbitTrade()
