@@ -19,8 +19,10 @@ class CoinSimulator:
         self.trader = upbit.UpbitTrade()
         self.coin_candle_data = dict()
         self.avg_index = dict()
+        self.balance = dict()
         for i in self.selected_coin:
             self.avg_index[i] = -1
+            self.balance[i] = {'currency':i,'balance':0, 'avg_price':0}
 
     def InitGetAvgCandle(self, time_tick, start_time, end_time):
         '''
@@ -45,8 +47,37 @@ class CoinSimulator:
             print("{} 크롤링 완료".format(coin))
             self.coin_candle_data[coin] = candle_list
         print('=====================모든 coin data 크롤링 완료=====================')
+
     def GetMinCandle(self, stockcode, mins='1', count=1, start_time = None):
         self.avg_index[stockcode] +=1
-        return self.coin_candle_data[self.avg_index[stockcode]]
+        return self.coin_candle_data[stockcode][self.avg_index[stockcode]]
+
+    def GetBalance(self, coin=False):
+        '''
+
+        :return:
+        '''
+        return self.balance
+
+    def SendBuying(self, stockcode, amount, trade, price=None):
+        result = {}
+        result['avg_price'] = self.coin_candle_data[stockcode][self.avg_index[stockcode]]['trade_price']
+        result['executed_volume'] = amount
+        total_price = self.balance[stockcode]['avg_price']*self.balance[stockcode]['balance']
+        now_price = self.coin_candle_data[stockcode][self.avg_index[stockcode]]['trade_price'] *amount
+        self.balance[stockcode]['avg_price'] = round((total_price+now_price)/(amount + self.balance[stockcode]['balance']),2)
+        self.balance[stockcode]['balance'] += amount
+
+        return result
+
+
+    def SendSelling(self, stockcode, amount, trade, price=None):
+        result = {}
+        result['avg_price'] = self.coin_candle_data[stockcode][self.avg_index[stockcode]]['trade_price']
+        result['executed_volume'] = amount
+        self.balance[stockcode]['balance'] = 0
+        self.balance[stockcode]['avg_price'] = 0
+        return result
+
 if __name__ == '__main__':
     pass

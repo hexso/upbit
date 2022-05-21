@@ -23,7 +23,7 @@ class AvgCandle:
     def __init__(self):
         self.TICK_WAITTIME = 0.1
         self.SEED_MONEY = 10000
-        self.CANDLE_MIN = 30 # 분봉
+        self.CANDLE_MIN = 15 # 분봉
         self.YIELD = 3# 목표 수익률
         self.UP_AVG_CANDLE = 30 # 상위 이동평균선
         self.MIDDLE_AVG_CANDLE = 15
@@ -82,7 +82,9 @@ class AvgCandle:
 
                 else: # 코인을 가지고 있는 경우
                     res = self.SellingSignal(self.coin_candle_list[i])
-                    if res == 1:
+                    now_coin_price = self.trader.GetCurrentPrice(i)
+                    profit_rate = ((self.coin_price[i] - now_coin_price) / self.coin_price[i]) * 100
+                    if res == 1 or profit_rate >= self.YIELD:
                         print('{} coin 판매 시그널입니다.'.format(i))
                         result = self.SellCoinLimit(i)
                     else:
@@ -96,14 +98,20 @@ class AvgCandle:
         '''
         참조 : self.UP_AVG_CANDLE, self.DOWN_AVG_CANDLE
         :param: coin_util function을 통해 나온 데이터들
-        :return:
-
-
+        5평선이 15,30평선을 뚫고 올라갈때 구매
+        :return: 0(유지) 1(구매)
         '''
+        now_data = data.loc[0]
+        if now_data['ma' + str(self.DOWN_AVG_CANDLE)] > now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
+            now_data['ma' + str(self.DOWN_AVG_CANDLE)] > now_data['ma' + str(self.UP_AVG_CANDLE)]:
+            return 1
         return 0
 
     def SellingSignal(self, data):
-
+        now_data = data.loc[0]
+        if now_data['ma' + str(self.DOWN_AVG_CANDLE)] < now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
+            now_data['ma' + str(self.DOWN_AVG_CANDLE)] < now_data['ma' + str(self.UP_AVG_CANDLE)]:
+            return 1
         return 0
 
     def AverageDownSignal(self, data):
@@ -116,7 +124,7 @@ class AvgCandle:
         # 코인 동기화
         print('Avg Candle 받아 올 예정입니다.')
         for i in self.selected_coin :
-            data = self.trader.GetMinCandle(i, self.CANDLE_MIN, self.UP_AVG_CANDLE)
+            data = self.trader.GetMinCandle(i, self.CANDLE_MIN, self.UP_AVG_CANDLE + 10)
             self.coin_candle_list[i] = coin_util.get_stock_indicators(data)
             sleep(self.TICK_WAITTIME)
         #threading.Timer(self.CANDLE_MIN * 60, self.GetAvgCandle).start()
@@ -156,7 +164,7 @@ class AvgCandle:
             print('{} 코인 판매를 시도하였으나 실패하였습니다.'.format(coin))
             print('에러 내용 : {}'.format(result))
             return result
-        profit_price = (self.coin_price[coin] - result['avg_price']) * result['volume']
+        profit_price = (self.coin_price[coin] - result['avg_price']) * result['executed_volume']
         profit_rate = round((profit_price/(self.coin_amount[coin] * self.coin_price[coin]))*100,2)
         print('{} 코인을 판매하였습니다. 총 수익은 {}원, 수익률은 {}%입니다.'.format(coin, profit_price, profit_rate))
         self.buy_cnt[coin] = 1
@@ -185,4 +193,5 @@ class AvgCandle:
 
 
 if __name__ == '__main__':
-    simulator = CoinSimulator()
+    simulator = CoinSimulator(TARGET_COIN)
+    simulator.InitGetAvgCandle(15, '2022-01-01 00:00:00','2022-05-20 00:00:00')
