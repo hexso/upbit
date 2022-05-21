@@ -2,6 +2,8 @@ import upbit
 from notify.telegram_bot import TelegramBot
 from rapid_stock import RapidStock
 from buying_half import BuyingHalf
+from average_candle import AvgCandle
+from upbit_simulator import CoinSimulator
 '''
 매매하는 알고리즘은 start함수를 통해 실행된다.
 나머지 매도, 매수같은 함수들은 아래의 함수들을 이용한다.
@@ -81,10 +83,12 @@ if __name__ == '__main__':
     Upbit
     '''
     autoTrader = AutoBot()
-    trader = upbit.UpbitTrade()
-    #algorithm = average_candle.AvgCandle()
+    algorithm = AvgCandle()
     #algorithm = RapidStock()
-    algorithm = BuyingHalf()
+    #algorithm = BuyingHalf()
+    #trader = upbit.UpbitTrade()
+    trader = CoinSimulator()
+    trader.InitGetAvgCandle(15,start_time='2022-01-01 00:00:00',end_time='2022-05-20 00:00:00')
     autoTrader.AutoStart(algorithm, trader)
     # ch = input('뭐할래?')
     # if ch == '1':

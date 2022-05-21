@@ -47,8 +47,17 @@ class UpbitTrade:
     upbit = None
     def __init__(self):
         print("Upbit is initiate.")
+        with open('private.txt', 'r') as f:
+            data = f.read()
+            data = data.split('\n')
+            for i in data:
+                if 'accesskey' in i:
+                    accesskey = i[i.find(':')+1:]
+                elif 'secretkey' in i:
+                    secretkey = i[i.find(':') + 1:]
+        self._Login(accesskey, secretkey)
 
-    def Login(self, access_key, secret_key):
+    def _Login(self, access_key, secret_key):
         UpbitTrade.upbit = pyupbit.Upbit(access_key, secret_key)
         print(UpbitTrade.upbit.get_balances())
         #error handle required
@@ -66,7 +75,6 @@ class UpbitTrade:
             balance = UpbitTrade.upbit.get_balances(coin)
         else:
             balance = UpbitTrade.upbit.get_balance(coin)
-        print(balance)
         return balance
 
     @SleepTime

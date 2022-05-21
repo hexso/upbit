@@ -21,7 +21,7 @@ class TelegramBot:
 
 if __name__ == '__main__':
     #tlgBot = TelegramBot()
-    with open('private.txt', 'r') as f:
+    with open('../private.txt', 'r') as f:
         data = f.read()
         data = data.split('\n')
         for i in data:
