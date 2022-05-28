@@ -130,37 +130,14 @@ class UpbitTrade:
         return t_stocks_list
 
     @SleepTime
-    def GetDayCandle(self, stockcode, count=1, start_time = None):
-        '''
-        :param stockcode: input stocks tickers. ex) KRW-BTC
-        :return: dictionary is in list.
-                opening_price, high_price, low_price, trade_price,
-                candle_acc_trade_price, candle_acc_trade_volume,
-                change_price, change_rate
-        '''
-        url = "https://api.upbit.com/v1/candles/days"
-        querystring = {"market": stockcode, "count": count, "to":start_time}
-        response = requests.request("GET", url, params=querystring)
-        json_data = json.loads(response.text)
-        return json_data
-
-    @SleepTime
-    def GetMinCandle(self, stockcode, mins='1', count=1, start_time = None):
-        '''
-
-        :param stockcode: input stocks tickers. ex) KRW-BTC
-        :return: dictionary is in list.
-                opening_price, high_price, low_price, trade_price,
-                candle_acc_trade_price, candle_acc_trade_volume,
-                change_price, change_rate
-        '''
-        if type(mins) == type(1) :
+    def GetCandle(self, stockcode, mins='1', count=1, start_time = None):
+        if type(mins) == int:
             mins = str(mins)
-        url = "https://api.upbit.com/v1/candles/minutes/" + mins
-        querystring = {"market": stockcode, "count": count, "to":start_time}
-        response = requests.request("GET", url, params=querystring)
-        json_data = json.loads(response.text)
-        return json_data
+        count = int(count)
+        time_dict = {'1440':'day','1':'minute1','3':'minute3','5':'minute5','10':'minute10','15':'minute15','30':'minute30 ',
+                     '60':'minute60','240':'minute240','10080':'week'}
+        time_unit = time_dict[mins]
+        return pyupbit.get_ohlcv(stockcode, time_unit, count, start_time)
 
     @SleepTime
     def GetCurrentPrice(self, stockcode):

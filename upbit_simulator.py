@@ -19,10 +19,10 @@ class CoinSimulator:
         self.trader = upbit.UpbitTrade()
         self.coin_candle_data = dict()
         self.avg_index = dict()
-        self.balance = dict()
+        self.balance = list()
         for i in self.selected_coin:
-            self.avg_index[i] = -1
-            self.balance[i] = {'currency':i,'balance':0, 'avg_price':0}
+            self.avg_index[i] = 50
+            self.balance.append({'currency':i.split('-')[1],'balance':0, 'avg_price':0, 'unit_currency':'KRW'})
 
     def InitGetAvgCandle(self, time_tick, start_time, end_time):
         '''
@@ -34,23 +34,24 @@ class CoinSimulator:
         '''
         start_time_format = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
         end_time_format = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+        get_data_cnt = (end_time_format - start_time_format).total_seconds()/(60*time_tick)
         print('시작날짜 : {} 부터 {}까지 {}간격으로 크롤링할 예정입니다.'.format(start_time,end_time, time_tick))
         for coin in self.selected_coin:
-            candle_list = list()
-            while start_time_format < end_time_format:
-                start_time_format = start_time_format + timedelta(minutes=time_tick * 200) # 업비트는 해당 날짜를 기준으로 과거 데이터를 갖고오기 때문에 미리 +를 해줘야 한다.
-                start_time_str = start_time_format.strftime("%Y-%m-%d %H:%M:%S")
-                candle_data = self.trader.GetMinCandle(coin, time_tick, 200, start_time_str)
-                result = sorted(candle_data, key=lambda x: x['candle_date_time_kst'])
-                candle_list.append(result)
-                sleep(self.SLEEP_TIME)
+            data = self.trader.GetCandle(coin, time_tick, get_data_cnt, end_time)
             print("{} 크롤링 완료".format(coin))
-            self.coin_candle_data[coin] = candle_list
+            self.coin_candle_data[coin] = data
         print('=====================모든 coin data 크롤링 완료=====================')
 
     def GetMinCandle(self, stockcode, mins='1', count=1, start_time = None):
         self.avg_index[stockcode] +=1
-        return self.coin_candle_data[stockcode][self.avg_index[stockcode]]
+        index = self.avg_index[stockcode]
+        if index >= len(self.coin_candle_data[stockcode]):
+            return None
+        return self.coin_candle_data[stockcode].iloc[index-count:index]
+
+    def GetCurrentPrice(self, stockcode):
+        index = self.avg_index[stockcode]
+        return self.coin_candle_data[stockcode].iloc[index]['close']
 
     def GetBalance(self, coin=False):
         '''
@@ -61,23 +62,35 @@ class CoinSimulator:
 
     def SendBuying(self, stockcode, amount, trade, price=None):
         result = {}
-        result['avg_price'] = self.coin_candle_data[stockcode][self.avg_index[stockcode]]['trade_price']
+        index = self.avg_index[stockcode]
+        result['avg_price'] = self.coin_candle_data[stockcode].iloc[index]['close']
         result['executed_volume'] = amount
-        total_price = self.balance[stockcode]['avg_price']*self.balance[stockcode]['balance']
-        now_price = self.coin_candle_data[stockcode][self.avg_index[stockcode]]['trade_price'] *amount
-        self.balance[stockcode]['avg_price'] = round((total_price+now_price)/(amount + self.balance[stockcode]['balance']),2)
-        self.balance[stockcode]['balance'] += amount
+        result['paid_fee'] =  result['avg_price'] * amount
+        for data in self.balance:
+            if data['unit_currency']+'-'+data['currency'] == stockcode:
+                self.balance.remove(data)
+                total_price = data['avg_price']*data['balance']
+                data['avg_price'] = round((total_price + result['paid_fee'])/(amount + data['balance']),2)
+                data['balance'] += amount
+                self.balance.append(data)
+                break
 
-        return result
+        return [result]
 
 
     def SendSelling(self, stockcode, amount, trade, price=None):
         result = {}
-        result['avg_price'] = self.coin_candle_data[stockcode][self.avg_index[stockcode]]['trade_price']
+        index = self.avg_index[stockcode]
+        result['avg_price'] = self.coin_candle_data[stockcode].iloc[index]['close']
         result['executed_volume'] = amount
-        self.balance[stockcode]['balance'] = 0
-        self.balance[stockcode]['avg_price'] = 0
-        return result
+        for data in self.balance:
+            if data['unit_currency']+'-'+data['currency'] == stockcode:
+                self.balance.remove(data)
+                data['balance'] = 0
+                data['avg_price'] = 0
+                self.balance.append(data)
+                break
+        return [result]
 
 if __name__ == '__main__':
     pass

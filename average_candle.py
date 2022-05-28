@@ -16,7 +16,8 @@ import coin_util
 Todo: 필요시 추가로 지정가 거래 구현 필요
 '''
 
-TARGET_COIN = ['KRW-BTC']
+TARGET_COIN = ['KRW-BTC', 'KRW-ETH']
+SIMULATOR = 0
 
 class AvgCandle:
 
@@ -36,11 +37,14 @@ class AvgCandle:
         self.coin_price = dict()
         self.selected_coin = TARGET_COIN
         self.buy_cnt = dict()
-
+        self.total_profit_rate = dict()
+        self.total_profit_price = dict()
         for coin in self.selected_coin:
             self.coin_amount[coin] = 0
             self.coin_price[coin] = 0
             self.buy_cnt[coin] = 0
+            self.total_profit_rate[coin] = 0
+            self.total_profit_price[coin] = 0
 
     def TargetCoin(self, coin):
         '''
@@ -71,7 +75,11 @@ class AvgCandle:
 
         while 1:
             # 처음 분봉 업데이트
-            self.GetAvgCandle()
+            if self.GetAvgCandle() is None:
+                print('Simulation이 끝났습니다.')
+                print('총 수익률은 다음과 같습니다.')
+                print(self.total_profit_rate)
+                exit(0)
             for i in self.selected_coin:
                 if self.coin_amount[i] == 0: # coin을 가지고 있지 않은 경우
                     res = self.BuyingSignal(self.coin_candle_list[i])
@@ -91,8 +99,8 @@ class AvgCandle:
                         if self.AverageDownSignal(self.coin_candle_list[i]) == 1:
                             print('{} coin 물타기 시그널 입니다.'.format(i))
                             self.BuyCoinLimit(i)
-
-            sleep(self.CANDLE_MIN)
+            if SIMULATOR is not 1:
+                sleep(self.TICK_WAITTIME)
 
     def BuyingSignal(self, data):
         '''
@@ -101,14 +109,20 @@ class AvgCandle:
         5평선이 15,30평선을 뚫고 올라갈때 구매
         :return: 0(유지) 1(구매)
         '''
-        now_data = data.loc[0]
+        now_data = data.iloc[-1]
         if now_data['ma' + str(self.DOWN_AVG_CANDLE)] > now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
             now_data['ma' + str(self.DOWN_AVG_CANDLE)] > now_data['ma' + str(self.UP_AVG_CANDLE)]:
             return 1
         return 0
 
     def SellingSignal(self, data):
-        now_data = data.loc[0]
+        '''
+        참조 : self.UP_AVG_CANDLE, self.DOWN_AVG_CANDLE
+        :param: coin_util function을 통해 나온 데이터들
+        5평선이 15,30평선을 뚫고 내려갔을때
+        :return: 0(유지) 1(구매)
+        '''
+        now_data = data.iloc[-1]
         if now_data['ma' + str(self.DOWN_AVG_CANDLE)] < now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
             now_data['ma' + str(self.DOWN_AVG_CANDLE)] < now_data['ma' + str(self.UP_AVG_CANDLE)]:
             return 1
@@ -122,11 +136,14 @@ class AvgCandle:
         :param 실시간으로 selected coin 리스트에 있는 코인들의 분봉을 얻는다.
         '''
         # 코인 동기화
-        print('Avg Candle 받아 올 예정입니다.')
         for i in self.selected_coin :
             data = self.trader.GetMinCandle(i, self.CANDLE_MIN, self.UP_AVG_CANDLE + 10)
+            if data is None:
+                return None
             self.coin_candle_list[i] = coin_util.get_stock_indicators(data)
-            sleep(self.TICK_WAITTIME)
+            if SIMULATOR is not 1:
+                sleep(self.TICK_WAITTIME)
+        return 1
         #threading.Timer(self.CANDLE_MIN * 60, self.GetAvgCandle).start()
 
     def BuyCoinLimit(self, coin):
@@ -135,28 +152,28 @@ class AvgCandle:
         :param coin:
         :return:
         '''
-        result = self.trader.SendBuying(coin, self.SEED_MONEY, '시장가')
+        buy_amount = self.SEED_MONEY/self.trader.GetCurrentPrice(coin)
+        result = self.trader.SendBuying(coin, buy_amount, '시장가')
         result = result[0]
-        sleep(1)
         if 'error' in result:
             print('{} 코인 구매를 시도하였으나 실패하였습니다.'.format(coin))
             print('에러 내용 : {}'.format(result))
             return result
         balance = self.trader.GetBalance()
+        coin_base = coin.split('-')[1]
         df = pd.DataFrame(balance)
-        data = df.loc[df['currency'] == coin]
-        self.coin_amount[coin] = data['balance']
-        self.coin_price[coin] = data['avg_price']
+        data = df.loc[df['currency'] == coin_base]
+        self.coin_amount[coin] = data['balance'].to_list()[0]
+        self.coin_price[coin] = data['avg_price'].to_list()[0]
         self.buy_cnt[coin] += 1
         print('코인 {}을 구매하였습니다. 총액 {}'.format(coin, result['paid_fee']))
-        print('현재 해당 코인의 보유량은 총 {}원입니다.'.format(data['balance']*data['avg_price']))
+        print('현재 해당 코인의 보유량은 총 {}원입니다.'.format(data['balance'].to_list()[0]*data['avg_price'].to_list()[0]))
 
         return result
 
     def SellCoinLimit(self, coin):
         amount = self.coin_amount[coin]
         result = self.trader.SendSelling(coin, amount, '시장가')
-        sleep(1)
         result = result[0]
         balance = self.trader.GetBalance()
         df = pd.DataFrame(balance)
@@ -167,6 +184,8 @@ class AvgCandle:
         profit_price = (self.coin_price[coin] - result['avg_price']) * result['executed_volume']
         profit_rate = round((profit_price/(self.coin_amount[coin] * self.coin_price[coin]))*100,2)
         print('{} 코인을 판매하였습니다. 총 수익은 {}원, 수익률은 {}%입니다.'.format(coin, profit_price, profit_rate))
+        self.total_profit_rate[coin] += profit_rate
+        self.total_profit_price[coin] += profit_price
         self.buy_cnt[coin] = 1
         if df.loc[df['currency'] == coin].size == 0:
             self.coin_amount[coin] = 0
@@ -193,5 +212,8 @@ class AvgCandle:
 
 
 if __name__ == '__main__':
+    SIMULATOR = 1
     simulator = CoinSimulator(TARGET_COIN)
-    simulator.InitGetAvgCandle(15, '2022-01-01 00:00:00','2022-05-20 00:00:00')
+    simulator.InitGetAvgCandle(15, '2022-05-01 00:00:00', '2022-05-20 00:00:00')
+    algorithm = AvgCandle()
+    algorithm.start(simulator)
