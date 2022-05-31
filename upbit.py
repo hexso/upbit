@@ -5,6 +5,7 @@ from datetime import date
 from time import sleep
 from functools import wraps
 import json
+import telegram
 
 WAITTIME=0.1
 LOGFILE='upbit_trade.txt'
@@ -42,12 +43,12 @@ def WithLog(func):
     return wrapper
 
 class UpbitTrade:
-
     stocks_list = []
     selected_coin = ''
     upbit = None
-    def __init__(self):
+    def __init__(self, print_function=print):
         print("Upbit is initiate.")
+        self.print_func = print_function
         with open('private.txt', 'r') as f:
             data = f.read()
             data = data.split('\n')
@@ -60,7 +61,7 @@ class UpbitTrade:
 
     def _Login(self, access_key, secret_key):
         UpbitTrade.upbit = pyupbit.Upbit(access_key, secret_key)
-        print(UpbitTrade.upbit.get_balances())
+        self.print_func(UpbitTrade.upbit.get_balances())
         #error handle required
 
     @SleepTime
@@ -92,14 +93,16 @@ class UpbitTrade:
         try :
             tradeType = Trade[trade]
         except KeyError as e:
-            print('Wrong trade type')
+            self.print_func('Wrong trade type')
             return 0
 
         if tradeType == 0:
             result = UpbitTrade.upbit.buy_limit_order(stockcode, price, amount)
         elif tradeType == 1:
             result = UpbitTrade.upbit.buy_market_order(stockcode, amount)
-
+        sleep(1)
+        result = UpbitTrade.upbit.get_order(result['uuid'])
+        self.print_func('{} 코인 {} 구매. 결과값 result : {}'.format(stockcode, result['executed_volume'], result))
         return result
 
     @WithLog
@@ -109,14 +112,16 @@ class UpbitTrade:
         try:
             tradeType = Trade[trade]
         except KeyError as e:
-            print('Wrong trade type')
+            self.print_func('Wrong trade type')
             return 0
 
         if tradeType == 0:
             result = UpbitTrade.upbit.sell_limit_order(stockcode, price, amount)
         elif tradeType == 1:
             result = UpbitTrade.upbit.sell_market_order(stockcode, amount)
-
+        sleep(1)
+        result = UpbitTrade.upbit.get_order(result['uuid'])
+        self.print_func('{} 코인 {} 판매. 결과값 result : {}'.format(stockcode, amount, result))
         return result
 
     @WithLog
@@ -127,11 +132,11 @@ class UpbitTrade:
     @SleepTime
     def GetStocksList(self, money="KRW"):
         t_stocks_list = pyupbit.get_tickers(fiat=money)
-        print('getbal = {}'.format(t_stocks_list))
+        self.print_func('getbal = {}'.format(t_stocks_list))
         return t_stocks_list
 
     @SleepTime
-    def GetCandle(self, stockcode, mins='1', count=1, start_time = None):
+    def GetMinCandle(self, stockcode, mins='1', count=1, start_time = None):
         if type(mins) == int:
             mins = str(mins)
         count = int(count)
@@ -149,6 +154,5 @@ class UpbitTrade:
 
 if __name__ == '__main__':
     tr = UpbitTrade()
-    print(tr.GetMinCandle('KRW-BTC',15,10))
 
     print('PyCharm')

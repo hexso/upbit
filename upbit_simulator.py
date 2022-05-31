@@ -37,7 +37,7 @@ class CoinSimulator:
         get_data_cnt = (end_time_format - start_time_format).total_seconds()/(60*time_tick)
         print('시작날짜 : {} 부터 {}까지 {}간격으로 크롤링할 예정입니다.'.format(start_time,end_time, time_tick))
         for coin in self.selected_coin:
-            data = self.trader.GetCandle(coin, time_tick, get_data_cnt, end_time)
+            data = self.trader.GetMinCandle(coin, time_tick, get_data_cnt, end_time)
             print("{} 크롤링 완료".format(coin))
             self.coin_candle_data[coin] = data
         print('=====================모든 coin data 크롤링 완료=====================')
@@ -63,26 +63,27 @@ class CoinSimulator:
     def SendBuying(self, stockcode, amount, trade, price=None):
         result = {}
         index = self.avg_index[stockcode]
-        result['avg_price'] = self.coin_candle_data[stockcode].iloc[index]['close']
-        result['executed_volume'] = amount
-        result['paid_fee'] =  result['avg_price'] * amount
+        result['price'] = self.coin_candle_data[stockcode].iloc[index]['close']
+        result['balance'] = amount / self.coin_candle_data[stockcode].iloc[index]['close']
+        result['paid_fee'] = result['price'] * result['balance']
         for data in self.balance:
             if data['unit_currency']+'-'+data['currency'] == stockcode:
                 self.balance.remove(data)
                 total_price = data['avg_price']*data['balance']
-                data['avg_price'] = round((total_price + result['paid_fee'])/(amount + data['balance']),2)
-                data['balance'] += amount
+                data['avg_price'] = round((total_price + result['paid_fee'])/(result['balance'] + data['balance']),2)
+                data['balance'] += result['balance']
                 self.balance.append(data)
                 break
 
-        return [result]
+        return result
 
 
     def SendSelling(self, stockcode, amount, trade, price=None):
         result = {}
         index = self.avg_index[stockcode]
-        result['avg_price'] = self.coin_candle_data[stockcode].iloc[index]['close']
-        result['executed_volume'] = amount
+        result['trades'] = [{}]
+        result['trades'][0]['price'] = self.coin_candle_data[stockcode].iloc[index]['close']
+        result['volume'] = amount
         for data in self.balance:
             if data['unit_currency']+'-'+data['currency'] == stockcode:
                 self.balance.remove(data)
@@ -90,7 +91,7 @@ class CoinSimulator:
                 data['avg_price'] = 0
                 self.balance.append(data)
                 break
-        return [result]
+        return result
 
 if __name__ == '__main__':
     pass

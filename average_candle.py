@@ -16,15 +16,15 @@ import coin_util
 Todo: 필요시 추가로 지정가 거래 구현 필요
 '''
 
-TARGET_COIN = ['KRW-BTC', 'KRW-ETH']
+TARGET_COIN = ['KRW-BTC', 'KRW-ETH', 'KRW-ADA', 'KRW-XRP', 'KRW-SOL', 'KRW-DOGE', 'KRW-ETC']
 SIMULATOR = 0
 
 class AvgCandle:
 
     def __init__(self):
-        self.TICK_WAITTIME = 0.1
         self.SEED_MONEY = 10000
         self.CANDLE_MIN = 15 # 분봉
+        self.TICK_WAITTIME = self.CANDLE_MIN * 30
         self.YIELD = 3# 목표 수익률
         self.UP_AVG_CANDLE = 30 # 상위 이동평균선
         self.MIDDLE_AVG_CANDLE = 15
@@ -86,6 +86,7 @@ class AvgCandle:
                     res = self.BuyingSignal(self.coin_candle_list[i])
                     if res == 1:
                         print('{} coin 구매 시그널 입니다.'.format(i))
+                        #print(self.coin_candle_list[i].iloc[-1])
                         self.BuyCoinLimit(i)
 
 
@@ -95,6 +96,7 @@ class AvgCandle:
                     profit_rate = ((self.coin_price[i] - now_coin_price) / self.coin_price[i]) * 100
                     if res == 1 or profit_rate >= self.YIELD:
                         print('{} coin 판매 시그널입니다.'.format(i))
+                        #print(self.coin_candle_list[i].iloc[-1])
                         result = self.SellCoinLimit(i)
                     else:
                         if self.AverageDownSignal(self.coin_candle_list[i]) == 1:
@@ -154,8 +156,7 @@ class AvgCandle:
         :return:
         '''
         buy_amount = self.SEED_MONEY/self.trader.GetCurrentPrice(coin)
-        result = self.trader.SendBuying(coin, buy_amount, '시장가')
-        result = result[0]
+        result = self.trader.SendBuying(coin, self.SEED_MONEY, '시장가')
         if 'error' in result:
             print('{} 코인 구매를 시도하였으나 실패하였습니다.'.format(coin))
             print('에러 내용 : {}'.format(result))
@@ -164,10 +165,10 @@ class AvgCandle:
         coin_base = coin.split('-')[1]
         df = pd.DataFrame(balance)
         data = df.loc[df['currency'] == coin_base]
-        self.coin_amount[coin] = data['balance'].to_list()[0]
-        self.coin_price[coin] = data['avg_price'].to_list()[0]
+        self.coin_amount[coin] = float(data['balance'].to_list()[0])
+        self.coin_price[coin] = float(data['avg_price'].to_list()[0])
         self.buy_cnt[coin] += 1
-        print('코인 {}을 구매하였습니다. 총액 {}'.format(coin, result['paid_fee']))
+        print('코인 {}을 구매하였습니다. 총액 {}'.format(coin, result['price']))
         print('현재 해당 코인의 보유량은 총 {}원입니다.'.format(data['balance'].to_list()[0]*data['avg_price'].to_list()[0]))
 
         return result
@@ -175,14 +176,13 @@ class AvgCandle:
     def SellCoinLimit(self, coin):
         amount = self.coin_amount[coin]
         result = self.trader.SendSelling(coin, amount, '시장가')
-        result = result[0]
         balance = self.trader.GetBalance()
         df = pd.DataFrame(balance)
         if 'error' in result:
             print('{} 코인 판매를 시도하였으나 실패하였습니다.'.format(coin))
             print('에러 내용 : {}'.format(result))
             return result
-        profit_price = (self.coin_price[coin] - result['avg_price']) * result['executed_volume']
+        profit_price = (self.coin_price[coin] - result['trades'][0]['price']) * result['volume']
         profit_rate = round((profit_price/(self.coin_amount[coin] * self.coin_price[coin]))*100,2)
         print('{} 코인을 판매하였습니다. 총 수익은 {}원, 수익률은 {}%입니다.'.format(coin, profit_price, profit_rate))
         self.total_profit_rate[coin] += profit_rate

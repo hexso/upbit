@@ -23,10 +23,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     algorithm = average_candle.AvgCandle()
+    noti_bot = TelegramBot('private.txt')
     if args.simul is True:
         trader = upbit_simulator.CoinSimulator(COIN_LIST)
         average_candle.SIMULATOR = 1
         trader.InitGetAvgCandle(15,start_time='2022-01-01 00:00:00',end_time='2022-05-20 00:00:00')
     else:
-        trader = upbit.UpbitTrade()
+        trader = upbit.UpbitTrade(noti_bot.SendMsg)
     algorithm.start(trader)

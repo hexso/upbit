@@ -3,10 +3,21 @@ from telegram.ext import Updater, CommandHandler
 
 class TelegramBot:
 
-    def __init__(self):
+    def __init__(self, file=None):
         self.core = None
         self.updater = None
         self.id = None
+        if file != None:
+            with open(file, 'r') as f:
+                data = f.read()
+                data = data.split('\n')
+                for i in data:
+                    if 'telegramtoken' in i:
+                        token = i[i.find(':') + 1:]
+                        self.core = telegram.Bot(token)
+                        self.updater = Updater(token)
+                    elif 'telegramchatid' in i:
+                        self.id = i[i.find(':') + 1:]
 
     def SetChatId(self, chat_id):
         self.id = chat_id
