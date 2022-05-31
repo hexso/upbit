@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import requests
 import pyupbit
 from datetime import date

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import upbit
 from notify.telegram_bot import TelegramBot
 from rapid_stock import RapidStock
