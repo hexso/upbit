@@ -4,6 +4,7 @@ import pandas as pd
 
 def get_stock_indicators(x):
     copied = x.copy()
+    copied['ma3'] = talib.MA(copied['close'], 3)
     copied['ma5'] = talib.MA(copied['close'], 5)
     copied['ma15'] = talib.MA(copied['close'], 15)
     copied['ma30'] = talib.MA(copied['close'], 30)

@@ -28,7 +28,8 @@ class AvgCandle:
         self.YIELD = 3# 목표 수익률
         self.UP_AVG_CANDLE = 30 # 상위 이동평균선
         self.MIDDLE_AVG_CANDLE = 15
-        self.DOWN_AVG_CANDLE = 5 # 하위 이동평균선
+        self.BUY_AVG_CANDLE = 3 #매수 이동 평균선
+        self.SELL_AVG_CANDLE = 5 #매도 이동 평균선
 
         print('AvgCandle initiate')
         self.trader = None
@@ -110,8 +111,8 @@ class AvgCandle:
         :return: 0(유지) 1(구매)
         '''
         now_data = data.iloc[-1]
-        if now_data['ma' + str(self.DOWN_AVG_CANDLE)] > now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
-            now_data['ma' + str(self.DOWN_AVG_CANDLE)] > now_data['ma' + str(self.UP_AVG_CANDLE)]:
+        if now_data['ma' + str(self.BUY_AVG_CANDLE)] > now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
+            now_data['ma' + str(self.BUY_AVG_CANDLE)] > now_data['ma' + str(self.UP_AVG_CANDLE)]:
             return 1
         return 0
 
@@ -123,8 +124,8 @@ class AvgCandle:
         :return: 0(유지) 1(구매)
         '''
         now_data = data.iloc[-1]
-        if now_data['ma' + str(self.DOWN_AVG_CANDLE)] < now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
-            now_data['ma' + str(self.DOWN_AVG_CANDLE)] < now_data['ma' + str(self.UP_AVG_CANDLE)]:
+        if now_data['ma' + str(self.SELL_AVG_CANDLE)] < now_data['ma' + str(self.MIDDLE_AVG_CANDLE)] and \
+            now_data['ma' + str(self.SELL_AVG_CANDLE)] < now_data['ma' + str(self.UP_AVG_CANDLE)]:
             return 1
         return 0
 
